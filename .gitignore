@@ -3,3 +3,11 @@ node_modules/
 out.txt
 out2.txt
 .DS_Store
+
+# Azure Functions / Python
+azure-mcp-server/local.settings.json
+azure-mcp-server/.venv/
+__pycache__/
+.python_packages/
+bin/
+obj/

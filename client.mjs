@@ -27,10 +27,13 @@
 // --- Imports -----------------------------------------------------------------
 
 // Client       = the main MCP client object. Handles the protocol for us.
-// StdioClientTransport = the "pipe" layer. It spawns the server process and
-//                        carries messages back and forth over stdin/stdout.
+// StdioClientTransport = the "pipe" layer for LOCAL servers. It spawns the
+//                        server process and talks over stdin/stdout.
+// SSEClientTransport   = the layer for REMOTE servers over HTTP (e.g. our
+//                        Azure Function). Connects to a URL instead of a process.
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { SSEClientTransport } from "@modelcontextprotocol/sdk/client/sse.js";
 
 // readline/promises = Node's built-in tool for reading user input line by line.
 // stdin/stdout      = this program's own input/output streams (the terminal).
@@ -46,24 +49,38 @@ const argv = process.argv.slice(2);
 
 // No server command given? Print help and quit with a non-zero exit code.
 if (argv.length === 0) {
-  console.error("Usage: node client.mjs <server-command> [args...]");
-  console.error("Example: node client.mjs npx -y @modelcontextprotocol/server-everything");
+  console.error("Usage:");
+  console.error("  Local server : node client.mjs <command> [args...]");
+  console.error("  Remote server: node client.mjs <https://.../sse-url>");
+  console.error("");
+  console.error("Examples:");
+  console.error("  node client.mjs npx -y @modelcontextprotocol/server-everything");
+  console.error("  node client.mjs https://my-app.azurewebsites.net/runtime/webhooks/mcp/sse?code=KEY");
   process.exit(1);
 }
 
-const command = argv[0];   // the program to run, e.g. "npx"
-const args = argv.slice(1); // its arguments, e.g. ["-y", "@.../server-everything"]
+// --- 2. Pick a transport and connect -----------------------------------------
 
-// --- 2. Connect to the server ------------------------------------------------
+// Decide LOCAL vs REMOTE from the first argument. A URL -> remote (HTTP/SSE);
+// anything else -> a local command we spawn.
+const first = argv[0];
+const isUrl = first.startsWith("http://") || first.startsWith("https://");
 
-// The transport spawns `command args...` as a child process and wires up the
-// stdio pipes. The Client object speaks MCP over that transport.
-const transport = new StdioClientTransport({ command, args });
+let transport;
+if (isUrl) {
+  // REMOTE: connect to the server's SSE endpoint over HTTP. No process spawned.
+  transport = new SSEClientTransport(new URL(first));
+  console.log(`Connecting to (remote): ${first}`);
+} else {
+  // LOCAL: spawn `command args...` as a child process and talk over stdio.
+  const command = first;
+  const args = argv.slice(1);
+  transport = new StdioClientTransport({ command, args });
+  console.log(`Connecting to (local): ${command} ${args.join(" ")}`);
+}
 
 // Our own identity. The server may log this. Name/version are arbitrary.
 const client = new Client({ name: "mcp-test-client", version: "1.0.0" });
-
-console.log(`Connecting to: ${command} ${args.join(" ")}`);
 
 // connect() launches the server and runs the MCP handshake. `await` because it
 // is async (network/process I/O). After this line we are connected.

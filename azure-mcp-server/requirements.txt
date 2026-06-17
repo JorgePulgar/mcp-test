@@ -1,0 +1,3 @@
+# Azure Functions Python worker. The MCP tool trigger itself ships in the
+# extension bundle (see host.json), so no extra package is needed here.
+azure-functions

@@ -98,6 +98,19 @@ node client.mjs node my-own-server.mjs
 
 Same client, different server.
 
+## Connect to a remote server (Azure Function)
+
+The client also speaks to **remote** MCP servers over HTTP/SSE. If the first
+argument is a URL, it uses the SSE transport instead of spawning a process:
+
+```bash
+node client.mjs "https://<app>.azurewebsites.net/runtime/webhooks/mcp/sse?code=<key>"
+```
+
+This repo includes one such server in **[`azure-mcp-server/`](azure-mcp-server/)** —
+a Python MCP server deployed as an Azure Function via the official MCP extension.
+See its README for tools, the endpoint, and deploy steps.
+
 ---
 
 ## How it works (5 steps)
