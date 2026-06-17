@@ -1,0 +1,12 @@
+{
+  "name": "mcp-test-client",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Simple MCP client - connects to any MCP server over stdio",
+  "scripts": {
+    "start": "node client.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  }
+}
